@@ -112,5 +112,3 @@ npm start
 **Created by Chilongo Kondwani** *Developed for the [Insert Hackathon Name] Challenge.*
 
 ---
-
-**Would you like me to generate a `LICENSE` file or a `CONTRIBUTING.md` guide to go along with this?**
