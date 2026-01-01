@@ -1,8 +1,9 @@
 fastapi
 uvicorn
 python-multipart
-requests
-python-dotenv
-paddleocr>=2.7.0
 erniebot
+paddlepaddle
+paddleocr
+pdfplumber
+huggingface_hub
 opencv-python-headless

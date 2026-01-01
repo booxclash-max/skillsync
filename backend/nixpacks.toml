@@ -1,0 +1,18 @@
+[phases.setup]
+nixPkgs = [
+    "python311",
+    "gcc",
+    "glib",
+    "libGL",
+    "libX11",
+    "libXext",
+    "libXrender"
+]
+
+[phases.install]
+cmds = ["python -m pip install -r requirements.txt"]
+
+[phases.build]
+cmds = ["mkdir -p /root/.paddleocr"] 
+# Optional: Pre-download models here if you want faster boot times, 
+# otherwise they download on first run (which might time out).
