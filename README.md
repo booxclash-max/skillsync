@@ -1,87 +1,98 @@
 # 🧠 SkillSync: AI Simulation Engine
 
-> **Turn any PDF manual into an immersive, multilingual safety simulation.**
+> **Turn static PDF manuals into immersive, visual, and multilingual safety simulations.**
+
+SkillSync is an AI-powered educational platform that ingests technical documentation (PDFs) and instantly generates interactive roleplay scenarios. It bridges the gap between theory and practice by creating **context-aware visual aids** and **multilingual simulations** on the fly.
 
 ---
 
-## 🚨 Essential: How to Test This Project
+## 🚀 Live Demo
 
-SkillSync uses a **hybrid architecture**: the "Brain" (AI) runs on a GPU-enabled Google Colab instance, while the "Body" (Frontend) is hosted on Vercel.
+### [👉 Try the Live App Here](https://skillsync-drab.vercel.app)
 
-### 📺 1. Watch the Demo (Fastest Way)
-
-[ **(INSERT YOUR YOUTUBE LINK HERE)** ]
-
-*See the cross-lingual capabilities and real-time inference in action without setup.*
-
----
-
-### 🛠️ 2. Live Testing (Do It Yourself)
-
-#### **Step A: Wake up the Brain (Backend)**
-
-1. **Open the Server Notebook**:
-2. In Colab, click **Runtime → Run All** (or press `Ctrl + F9`).
-3. **Wait ~2 minutes** while the environment initializes and the micro-model loads.
-4. Scroll to the last cell and copy the **Public Ngrok URL** *(e.g., `https://xxxx-xx.ngrok-free.app`)*.
-
-#### **Step B: Connect the Body (Frontend)**
-
-1. **Open the Live App**:
-👉 [https://frontend-inky-ten-89.vercel.app/](https://frontend-inky-ten-89.vercel.app/)
-2. Paste your **Ngrok URL** into the **Server URL** field in the UI.
-3. Upload a PDF (e.g., a safety or operations manual).
-4. **Select a language** (English, Chinese, Spanish, etc.) and click **INITIALIZE**.
-
----
-
-## 🏗️ Architecture & Technical Pivot
-
-To ensure stability on free-tier **T4 GPUs**, we pivoted from larger models (Qwen 7B) to a **Micro-Model Architecture**. This choice prioritizes low latency and high reliability in resource-constrained environments.
-
-### System Overview
-
-* **Frontend (React):** A Cyberpunk-inspired UI featuring scanlines, typewriter effects, and language-aware state management.
-* **Tunnel (Ngrok):** Securely exposes the ephemeral Colab backend to the public web.
-* **Backend (FastAPI):**
-* **LLM:** `baidu/ERNIE-4.5-0.3B` (quantized) for rapid text generation.
-* **Interceptor Middleware:** Custom logic to enforce strict prompting and prevent model hallucinations.
-* **OCR:** Integrated **PaddleOCR** to handle scanned or low-quality industrial PDFs.
-
-
+*(No setup required. Upload a manual and start training.)*
 
 ---
 
 ## ✨ Key Features
 
-* **🌍 The Babel Fish (Multilingual Support)** Upload an English manual and run simulations in **Chinese, Spanish, or Bemba** with on-the-fly translation.
-* **⚡ Instant Inference** The 0.3B parameter model reduces latency from ~15s to **under 2 seconds**, enabling a natural conversation flow.
-* **🛡️ Safety Net Logic** A deterministic fallback generator ensures the simulation never breaks immersion if the AI model hesitates or hits a safety filter.
-* **📄 PDF-to-Quiz Engine** Automatically extracts logic from raw PDF content to generate scenario-based **Multiple Choice Questions (MCQs)**.
+* **📄 Intelligent Document Ingestion**
+Uses **PaddleOCR** and `pdfplumber` to extract text from complex, scanned, or double-column industrial manuals where standard parsers fail.
+* **🧠 ERNIE 3.5 Powered Simulation**
+Leverages Baidu's **ERNIE-3.5** (via AI Studio) to generate logically sound, context-aware scenarios and Multiple Choice Questions (MCQs).
+* **🎨 Dynamic Visual Generation**
+Automatically detects physical concepts in the text (e.g., "Broken Valve") and generates technical **blueprint-style schematics** using **Stable Diffusion XL** (via Hugging Face), with a fallback to Pollinations.ai.
+* **🌍 The Babel Fish (Multilingual)**
+Upload an English manual and run simulations in **Chinese, Spanish, or Bemba** with zero latency using ERNIE's cross-lingual capabilities.
+* **🛡️ Robust Error Handling**
+Features a deterministic "Safety Net" that ensures the simulation never crashes, even if the AI hallucinates or hits API rate limits.
 
 ---
 
-## 💻 Tech Stack
+## 🏗️ Architecture
 
-| Layer | Technologies |
-| --- | --- |
-| **Frontend** | React.js, Axios, Lucide React, Tailwind CSS |
-| **Backend** | Python 3.12, FastAPI, Uvicorn |
-| **AI / ML** | PyTorch, Hugging Face Transformers, PaddleOCR |
-| **Infrastructure** | Google Colab (T4 GPU), Ngrok, Vercel |
+We pivoted from a heavy, local-GPU architecture to a **Cloud-Native, API-First approach** for maximum stability and speed.
+
+| Component | Technology | Role |
+| --- | --- | --- |
+| **Frontend** | **React + Tailwind** | hosted on **Vercel**. Provides the Cyberpunk UI and state management. |
+| **Backend** | **FastAPI (Python)** | hosted on **Render (Docker)**. Orchestrates the AI logic. |
+| **OCR Engine** | **PaddleOCR** | Runs inside the Docker container to digitize scanned PDFs. |
+| **Text AI** | **ERNIE-3.5** | Called via `erniebot` SDK for logic and storytelling. |
+| **Visual AI** | **SDXL 1.0** | Called via `huggingface_hub` for generating technical diagrams. |
+
+### System Flow
+
+```mermaid
+graph LR
+    User[User Uploads PDF] --> Frontend
+    Frontend -->|POST /upload| Backend
+    Backend -->|OCR Analysis| PaddleOCR
+    Backend -->|Context + Prompt| ERNIE[ERNIE 3.5 API]
+    ERNIE -->|Scenario Text| Backend
+    Backend -->|Extract Keywords| SDXL[Stable Diffusion]
+    SDXL -->|Schematic Image| Frontend
+    Frontend -->|Interactive Sim| User
+
+```
 
 ---
 
-## 🔧 Local Development (Frontend)
+## 🛠️ Local Development
 
-If you wish to run the frontend locally:
+### Prerequisites
+
+* Node.js 18+
+* Python 3.10+
+* Docker (Optional, for testing container builds)
+
+### 1. Backend Setup (FastAPI)
 
 ```bash
-# Clone the repository
+# Clone the repo
 git clone https://github.com/happi-web/SkillSync.git
+cd SkillSync/backend
 
-# Enter directory
-cd SkillSync
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Set Environment Variables (Create a .env file)
+# export AI_STUDIO_TOKEN="your_baidu_token"
+# export HF_TOKEN="your_huggingface_token"
+
+# Run Server
+uvicorn main:app --reload
+
+```
+
+### 2. Frontend Setup (React)
+
+```bash
+cd ../frontend
 
 # Install dependencies
 npm install
@@ -93,22 +104,44 @@ npm start
 
 ---
 
+## 📦 Deployment Guide
+
+### Backend (Render.com)
+
+The backend requires system-level C++ libraries for PaddleOCR, so we deploy using **Docker**.
+
+1. Push your code to GitHub.
+2. Create a **New Web Service** on Render.
+3. Select **Runtime: Docker**.
+4. Add Environment Variables: `AI_STUDIO_TOKEN` and `HF_TOKEN`.
+5. Deploy.
+
+*(Note: The repository includes a `Dockerfile` optimized for Render's free tier, pre-configured with `libGL` and other OCR dependencies.)*
+
+### Frontend (Vercel)
+
+1. Push code to GitHub.
+2. Import project into Vercel.
+3. Set the `REACT_APP_API_URL` environment variable to your **Render Backend URL**.
+4. Deploy.
+
+---
+
 ## 🐛 Troubleshooting
 
-### ❌ "Server Disconnected / Idle"
+### ❌ "Server Error / 500" on Upload
 
-* **Cause:** Google Colab times out after periods of inactivity.
-* **Fix:** Keep the Colab tab active. If it disconnects, restart the runtime and update the Ngrok URL in the frontend.
+* **Cause:** The OCR engine ran out of memory processing a large PDF.
+* **Fix:** Try a smaller PDF or wait a moment. The Render Free Tier has 512MB RAM limits.
 
-### ❌ "Model Returns Empty Response"
+### ❌ Images look "Off Topic"
 
-* **Cause:** The interceptor may filter outputs that don't match the strict simulation format.
-* **Fix:** The "Safety Net" should automatically inject a fallback question. If it persists, try re-initializing with a clearer PDF.
+* **Cause:** The AI generated a generic image because the context wasn't clear.
+* **Fix:** The backend now injects the "Manual Topic" into the image prompt automatically. Ensure your PDF filename is descriptive (e.g., `Centrifugal_Pump_Manual.pdf`).
 
 ---
 
 ### 👤 Author
 
-**Created by Chilongo Kondwani** *Developed for the ERNIE AI Developer Challenge.*
-
----
+**Created by Chilongo Kondwani**
+*Developed for the ERNIE AI Developer Challenge.*
