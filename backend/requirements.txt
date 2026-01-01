@@ -7,3 +7,4 @@ paddleocr
 pdfplumber
 huggingface_hub
 opencv-python-headless
+python-dotenv
