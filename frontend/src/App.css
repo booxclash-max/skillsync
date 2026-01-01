@@ -54,7 +54,13 @@ body {
   border-top: 2px solid var(--neon-blue);
   border-left: 2px solid var(--neon-blue);
 }
-
+.logo-box{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
 .upload-zone {
   display: block;
   margin-top: 20px;
