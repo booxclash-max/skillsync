@@ -2,10 +2,7 @@ import { useState } from 'react';
 import SimulationInterface from './components/SimulationInterface';
 import { HardDrive, UploadCloud, CheckCircle, Database, XCircle } from 'lucide-react';
 import './App.css';
-const BACKEND_URL =
-  import.meta.env.MODE === "production"
-    ? "https://skillsync-kdzy.onrender.com"
-    : "http://localhost:8000";
+const BACKEND_URL ="https://skillsync-kdzy.onrender.com"
 
 function App() {
   const [phase, setPhase] = useState('upload'); // upload | training | ready | simulation

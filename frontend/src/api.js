@@ -1,10 +1,8 @@
 import axios from "axios";
 
 // ⚠️ PASTE YOUR NEW NGROK URL HERE (From Colab Step 4 output)
-const BACKEND_URL =
-  import.meta.env.MODE === "production"
-    ? "https://skillsync-kdzy.onrender.com"
-    : "http://localhost:8000";
+const BACKEND_URL ="https://skillsync-kdzy.onrender.com"
+
 
 
 // Configure Axios with the "Magic Header" to bypass Ngrok warning
