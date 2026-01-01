@@ -83,7 +83,7 @@ function App() {
       {phase !== 'simulation' && (
         <header className="app-header">
             <div className="logo-box">
-                <Database color="#00d0ff" size={32} />
+                <img src="icon.png" alt="SkillSync Logo" className="logo-img" />
                 <h1>SKILLSYNC <span className="version">OS v4.0</span></h1>
             </div>
             <p className="status-line">SYSTEM ONLINE // WAITING FOR INPUT</p>
