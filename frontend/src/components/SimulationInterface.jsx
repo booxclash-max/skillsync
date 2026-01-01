@@ -24,7 +24,7 @@ import {
 
 import './SimulationInterface.css';
 
-const API_URL = 'http://localhost:8000';
+const BACKEND_URL ="https://skillsync-kdzy.onrender.com"
 
 /* ==========================================
    AUDIO FEEDBACK SYSTEM
@@ -101,7 +101,7 @@ const ErnieDiagram = ({ query }) => {
     const fetchImage = async () => {
       setLoading(true);
       try {
-        const res = await axios.post(`${API_URL}/generate_image`, {
+        const res = await axios.post(`${BACKEND_URL}/generate_image`, {
           prompt: query,
         });
 
@@ -236,7 +236,7 @@ const SimulationInterface = () => {
       }
 
       try {
-        const res = await axios.post(`${API_URL}/simulate`, {
+        const res = await axios.post(`${BACKEND_URL}/simulate`, {
           action,
           history: newHistory,
           language,
