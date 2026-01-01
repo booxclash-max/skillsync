@@ -1,11 +1,15 @@
 import axios from "axios";
 
 // ⚠️ PASTE YOUR NEW NGROK URL HERE (From Colab Step 4 output)
-const API_URL = "http://localhost:8000"; // <--- UPDATE THIS URL
+const BACKEND_URL =
+  import.meta.env.MODE === "production"
+    ? "https://skillsync-kdzy.onrender.com"
+    : "http://localhost:8000";
+
 
 // Configure Axios with the "Magic Header" to bypass Ngrok warning
 const apiClient = axios.create({
-    baseURL: API_URL,
+    baseURL: BACKEND_URL,
     headers: {
         "ngrok-skip-browser-warning": "69420", // <--- THIS FIXES THE ISSUE
     }
@@ -18,7 +22,7 @@ export const uploadPDF = async (file) => {
     
     // Note: We don't use apiClient here because FormData requires special headers
     // But we still attach the skip-warning header manually
-    const response = await axios.post(`${API_URL}/upload`, formData, {
+    const response = await axios.post(`${BACKEND_URL}/upload`, formData, {
         headers: {
             "ngrok-skip-browser-warning": "69420",
             "Content-Type": "multipart/form-data"
