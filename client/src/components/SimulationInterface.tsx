@@ -15,7 +15,7 @@ const API_BASE_URL =
   import.meta.env?.VITE_API_BASE ||
   (window.location.hostname === 'localhost'
     ? 'http://localhost:8000'
-    : 'https://skillsync-drab.vercel.app');
+    : 'https://skillsync-kdzy.onrender.com');
 
 const SimulationInterface = () => {
   const [quiz, setQuiz] = useState<any>(null);
