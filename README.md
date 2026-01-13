@@ -1,4 +1,3 @@
-````markdown
 # 🧠 SkillSync  
 ### Autonomous Multi-Agent Training Platform  
 
@@ -84,46 +83,44 @@ graph TD
     UserUI -->|Submits Answer| Auditor[Compliance Auditor Agent]
     Auditor -->|Verifies Against PDF| Feedback[Strict Feedback]
     Feedback --> UserUI
-````
+⚠️ Deployment Note: Enterprise vs Lite Mode
+To balance capability and stability during judging, SkillSync supports two modes:
 
----
+🟢 Production Mode (Full Capability – Seen in Video Demo)
+Driver: PaddleOCR (Deep Learning) + PaddlePaddle-GPU
 
-## ⚠️ Deployment Note: Enterprise vs Lite Mode
+Features:
 
-To balance **capability** and **stability** during judging, SkillSync supports two modes:
+Full layout analysis
 
-### 🟢 Production Mode (Full Capability – Seen in Video Demo)
+Diagram understanding
 
-* **Driver:** PaddleOCR (Deep Learning) + PaddlePaddle-GPU
-* **Features:**
+OCR for scanned documents
 
-  * Full layout analysis
-  * Diagram understanding
-  * OCR for scanned documents
-* **Requirements:**
+Requirements:
 
-  * 4GB+ RAM
-  * CUDA-capable GPU
+4GB+ RAM
 
-### 🟡 Live Demo Mode (Render Deployment)
+CUDA-capable GPU
 
-* **Driver:** PyMuPDF (Lightweight)
-* **Features:**
+🟡 Live Demo Mode (Render Deployment)
+Driver: PyMuPDF (Lightweight)
 
-  * Standard text extraction
-  * Image ripping
-* **Why:**
-  Ensures stability on **512MB RAM containers** during live judging
+Features:
 
-> ℹ️ The live demo highlights **agent orchestration and reasoning**, not deep OCR.
+Standard text extraction
 
----
+Image ripping
 
-## 🛠️ Local Installation (Full Production Mode)
+Why:
+Ensures stability on 512MB RAM containers during live judging
 
-### 1️⃣ Clone & Setup Backend
+ℹ️ The live demo highlights agent orchestration and reasoning, not deep OCR.
 
-```bash
+🛠️ Local Installation (Full Production Mode)
+1️⃣ Clone & Setup Backend
+bash
+Copy code
 git clone https://github.com/happi-web/SkillSync.git
 cd SkillSync/backend
 
@@ -132,60 +129,42 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # Install FULL requirements
 pip install -r requirements-full.txt
-```
+Includes: paddlepaddle, paddleocr, camel-ai, fastapi
 
-> Includes: `paddlepaddle`, `paddleocr`, `camel-ai`, `fastapi`
+2️⃣ Configure Tokens
+Create a .env file in /backend:
 
----
-
-### 2️⃣ Configure Tokens
-
-Create a `.env` file in `/backend`:
-
-```env
+env
+Copy code
 AI_STUDIO_TOKEN="your_baidu_ernie_token"
 HF_TOKEN="your_huggingface_token"
-```
-
----
-
-### 3️⃣ Run the Agent Swarm
-
-```bash
+3️⃣ Run the Agent Swarm
+bash
+Copy code
 python main.py
-```
-
 Server will start at:
-👉 `http://localhost:8000`
+👉 http://localhost:8000
 
----
-
-## 🏆 Hackathon Tracks
-
+🏆 Hackathon Tracks
 SkillSync is submitted for:
 
-* **🏅 Best Agent System (CAMEL-AI)**
-  Multi-agent *Architect vs Auditor* debate architecture
+🏅 Best Agent System (CAMEL-AI)
+Multi-agent Architect vs Auditor debate architecture
 
-* **🏅 Best ERNIE Multimodal Application**
-  Deep integration of **Text (ERNIE)** + **Vision (PaddleOCR)** for real-world training
+🏅 Best ERNIE Multimodal Application
+Deep integration of Text (ERNIE) + Vision (PaddleOCR) for real-world training
 
----
-
-## 👤 Author
-
-**Chilongo Kondwani**
+👤 Author
+Chilongo Kondwani
 Founder & Engineer
 
-Developed for the **Baidu ERNIE AI Developer Challenge**
+Developed for the Baidu ERNIE AI Developer Challenge
 
----
-
-## 📜 License
-
+📜 License
 MIT License
 
-```
+yaml
+Copy code
 
 ---
 
@@ -196,4 +175,3 @@ If you want next:
 - 🏆 **“Why we should win” section for judges**
 
 Just say the word.
-```
