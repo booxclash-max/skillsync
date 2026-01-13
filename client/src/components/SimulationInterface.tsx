@@ -11,7 +11,11 @@ declare global {
   }
 }
 
-const BACKEND_URL = "http://localhost:8000";
+const API_BASE_URL =
+  import.meta.env?.VITE_API_BASE ||
+  (window.location.hostname === 'localhost'
+    ? 'http://localhost:8000'
+    : 'https://skillsync-kdzy.onrender.com');
 
 const SimulationInterface = () => {
   const [quiz, setQuiz] = useState<any>(null);
@@ -120,7 +124,7 @@ const SimulationInterface = () => {
     setTranscript("");
     window.speechSynthesis.cancel(); // Stop speaking on new load
     try {
-      const res = await fetch(`${BACKEND_URL}/generate_quiz`, {
+      const res = await fetch(`${API_BASE_URL}/generate_quiz`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ target_language: selectedLanguage }),
@@ -138,7 +142,7 @@ const SimulationInterface = () => {
     if (loading || feedback) return;
     setLoading(true);
     try {
-      const res = await fetch(`${BACKEND_URL}/evaluate_answer`, {
+      const res = await fetch(`${API_BASE_URL}/evaluate_answer`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
