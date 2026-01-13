@@ -1,10 +1,18 @@
+# Core Web Framework
 fastapi
 uvicorn
 python-multipart
-erniebot
-paddlepaddle
-paddleocr
-pdfplumber
-huggingface_hub
-opencv-python-headless
 python-dotenv
+
+# AI Agents & Frameworks
+camel-ai
+erniebot
+huggingface-hub
+
+# Document & Image Processing
+PyMuPDF
+paddleocr
+paddlepaddle
+Pillow
+numpy
+opencv-python
