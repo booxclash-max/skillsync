@@ -123,7 +123,7 @@ function App() {
         
         {/* IMAGE ICON (32px like Database) */}
         <img
-          src="/icons/skillsync-core.png"  // change to your image path
+          src="/icon.png"  // change to your image path
           alt="SkillSync Core"
           className="w-8 h-8 animate-pulse"
         />
