@@ -1,18 +1,31 @@
-# Core Web Framework
+# # Core Web Framework
+# fastapi
+# uvicorn
+# python-multipart
+# python-dotenv
+
+# # AI Agents & Frameworks
+# camel-ai
+# erniebot
+# huggingface-hub
+
+# # Document & Image Processing
+# PyMuPDF
+# paddleocr
+# paddlepaddle
+# Pillow
+# numpy
+# opencv-python
+# requests
+
 fastapi
 uvicorn
 python-multipart
 python-dotenv
-
-# AI Agents & Frameworks
 camel-ai
 erniebot
 huggingface-hub
-
-# Document & Image Processing
 PyMuPDF
-paddleocr
-paddlepaddle
-Pillow
+pillow
 numpy
-opencv-python
+requests
