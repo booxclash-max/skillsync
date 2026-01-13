@@ -15,7 +15,7 @@ const API_BASE_URL =
   import.meta.env?.VITE_API_BASE ||
   (window.location.hostname === 'localhost'
     ? 'http://localhost:8000'
-    : 'https://nonalliterated-nonmonarchial-yulanda.ngrok-free.dev');
+    : 'https://skillsync-backend-5es5.onrender.com');
 
 const SimulationInterface = () => {
   const [quiz, setQuiz] = useState<any>(null);
