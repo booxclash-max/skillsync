@@ -1,255 +1,381 @@
-from fastapi import FastAPI, UploadFile, File
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-
-from paddleocr import PaddleOCR
-from huggingface_hub import InferenceClient
-import erniebot
-import pdfplumber
-
-import shutil
 import os
+import shutil
 import logging
+import random
+import json
 import base64
 import io
 import re
+import fitz  # PyMuPDF
+import numpy as np
+from PIL import Image
 
+from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 from dotenv import load_dotenv
 
+# --- CAMEL-AI IMPORTS ---
+from camel.agents import ChatAgent
+from camel.messages import BaseMessage
+from camel.types import RoleType
+
+# --- UTILITY IMPORTS ---
+import erniebot
+from paddleocr import PaddleOCR
+from huggingface_hub import InferenceClient
+
 # ==========================================
-# LOAD ENVIRONMENT VARIABLES
+# 0. LOGGING & SETUP
 # ==========================================
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%H:%M:%S"
+)
+logger = logging.getLogger("SkillSync")
+
+LAST_USED_LANGUAGE = "English" 
 
 load_dotenv()
+
+# --- CAMEL CONFIGURATION FIX ---
+# CAMEL requires an OpenAI key by default to start. We provide a dummy key
+# because we are routing traffic to Baidu Ernie manually via the Bridge.
+os.environ["OPENAI_API_KEY"] = "fake-key-bypass-for-camel-compliance"
 
 AI_STUDIO_TOKEN = os.getenv("AI_STUDIO_TOKEN")
 HF_TOKEN = os.getenv("HF_TOKEN")
 
-if not AI_STUDIO_TOKEN:
-    raise RuntimeError("AI_STUDIO_TOKEN is not set")
+if not AI_STUDIO_TOKEN or not HF_TOKEN:
+    raise RuntimeError("⚠️ MISSING API TOKENS. Please check your .env file.")
 
-if not HF_TOKEN:
-    raise RuntimeError("HF_TOKEN is not set")
-
-# ==========================================
-# CONFIGURATION
-# ==========================================
-
-# --- ERNIE (Chat / Simulation) ---
 erniebot.api_type = "aistudio"
 erniebot.access_token = AI_STUDIO_TOKEN
-
-# --- HUGGING FACE (Image Generation) ---
 hf_client = InferenceClient(token=HF_TOKEN)
 
-# --- OCR ---
-logging.getLogger("ppocr").setLevel(logging.ERROR)
-ocr = PaddleOCR(use_angle_cls=False, lang="en")
+app = FastAPI(title="SkillSync CAMEL Core")
+STATIC_DIR = "static_images"
+os.makedirs(STATIC_DIR, exist_ok=True)
 
-# ==========================================
-# APP SETUP
-# ==========================================
+# Clean static folder
+for f in os.listdir(STATIC_DIR):
+    os.remove(os.path.join(STATIC_DIR, f))
 
-app = FastAPI(title="SkillSync AI Simulation Engine")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # ==========================================
-# GLOBAL CONTEXT (IN-MEMORY SESSION)
+# 1. AGENT 1: VISUAL PERCEPTION AGENT (PADDLE OCR)
 # ==========================================
-
-global_context = {
-    "manual_text": "",
-    "history": [],
-    "topic": "General Science",
-}
-
-# ==========================================
-# REQUEST MODELS
-# ==========================================
-
-class SimRequest(BaseModel):
-    action: str
-    language: str = "English"
-
-
-class ImageGenRequest(BaseModel):
-    prompt: str
+# Role: The "Eyes" of the system. Reads raw PDFs and Images.
+# Logic: Uses PaddleOCR and PyMuPDF to extract text and rip images.
+# ------------------------------------------------------------------
+logging.getLogger("ppocr").setLevel(logging.ERROR)
+ocr = PaddleOCR(use_angle_cls=True, lang="ch") 
 
 # ==========================================
-# HELPER FUNCTIONS
+# 2. CAMEL BRIDGE (CONNECTION TO ERNIE)
 # ==========================================
+class ErnieCamelBackend:
+    """
+    Acts as the 'Brain' for the CAMEL Agents, routing thoughts to Baidu Ernie.
+    """
+    def __init__(self, model_name="ernie-3.5"):
+        self.model_name = model_name
 
-def extract_text_from_file(file_path: str, filename: str) -> str:
-    text = ""
-    is_pdf = filename.lower().endswith(".pdf")
+    def run(self, messages: list[BaseMessage]) -> str:
+        ernie_messages = []
+        system_content = ""
 
-    if is_pdf:
+        # Convert CAMEL messages to ERNIE format
+        for msg in messages:
+            if msg.role_name == "Assistant":
+                ernie_messages.append({"role": "assistant", "content": msg.content})
+            elif msg.role_name == "User":
+                ernie_messages.append({"role": "user", "content": msg.content})
+            elif msg.role_name == "System": 
+                system_content += f"SYSTEM INSTRUCTION: {msg.content}\n\n"
+
+        # Inject System Prompt
+        if system_content and ernie_messages:
+            for m in ernie_messages:
+                if m['role'] == 'user':
+                    m['content'] = system_content + "TASK:\n" + m['content']
+                    break
+        
         try:
-            with pdfplumber.open(file_path) as pdf:
-                for page in pdf.pages[:10]:
-                    extracted = page.extract_text()
-                    if extracted:
-                        text += extracted + "\n"
+            response = erniebot.ChatCompletion.create(
+                model=self.model_name,
+                messages=ernie_messages,
+            )
+            return response.get_result()
         except Exception as e:
-            print(f"[READ] PDF Error: {e}")
+            logger.error(f"Ernie Bridge Error: {e}")
+            return '{"error": "Agent connection failed"}'
 
-    if len(text) < 50:
-        try:
-            result = ocr.ocr(file_path, cls=False)
-            if result and result[0]:
-                text += "\n".join(line[1][0] for line in result[0])
-        except Exception as e:
-            print(f"[OCR] Error: {e}")
+def create_camel_agent(system_role: str):
+    """Factory to create a CAMEL agent with the Ernie Brain."""
+    sys_msg = BaseMessage.make_assistant_message(
+        role_name="Assistant",
+        content=system_role
+    )
+    # We pass model=None to bypass OpenAI connection, and return our custom backend
+    agent = ChatAgent(system_message=sys_msg, model=None)
+    backend = ErnieCamelBackend(model_name="ernie-3.5")
+    return agent, backend
 
-    return text
+# ==========================================
+# 3. RAG LOGIC (EXISTING LOGIC)
+# ==========================================
+def clean_text_for_json(text: str):
+    if not text: return ""
+    text = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', text)
+    return text.replace('\\', '\\\\')
 
-
-def extract_visual_concept(scenario_text: str) -> str:
+def extract_json_from_ai_response(raw_text: str):
     try:
-        prompt = f"""
-Extract the single most important physical object or setting
-for a technical diagram. Return ONLY the noun.
+        match = re.search(r'(\{.*\})', raw_text, re.DOTALL)
+        if match:
+            return json.loads(match.group(1))
+        return json.loads(raw_text)
+    except:
+        return None
 
-TEXT:
-{scenario_text[-500:]}
-"""
-        response = erniebot.ChatCompletion.create(
-            model="ernie-3.5",
-            messages=[{"role": "user", "content": prompt}],
-        )
-        return response.get_result().strip()
-    except Exception:
-        return "Technical Schematic"
+class RAGEngine:
+    def __init__(self):
+        self.chunks = []
+        self.pdf_images = {}
+
+    def ingest_pdf(self, path):
+        self.chunks = []
+        self.pdf_images = {}
+        try:
+            doc = fitz.open(path)
+        except Exception as e:
+            return f"Error: {e}"
+
+        logger.info(f"📂 [AGENT 1: VISUAL] Scanning {len(doc)} pages...")
+
+        for pg_num, page in enumerate(doc):
+            txt = page.get_text()
+            
+            # OCR Fallback
+            if len(txt) < 50:
+                pix = page.get_pixmap()
+                img_path = f"temp_ocr_{pg_num}.png"
+                pix.save(img_path)
+                try:
+                    res = ocr.ocr(img_path, cls=True)
+                    if res and res[0]: 
+                        txt = " ".join([line[1][0] for line in res[0]])
+                except: pass
+                finally:
+                    if os.path.exists(img_path): os.remove(img_path)
+            
+            if txt.strip():
+                self.chunks.append({
+                    "text": clean_text_for_json(txt.replace("\n", " ").strip()), 
+                    "page": pg_num
+                })
+
+            # Image Rip
+            for img_idx, img in enumerate(page.get_images(full=True)):
+                try:
+                    xref = img[0]
+                    base = doc.extract_image(xref)
+                    if len(base["image"]) < 5120: continue
+                    fname = f"p{pg_num}_{img_idx}.{base['ext']}"
+                    full_path = os.path.join(STATIC_DIR, fname)
+                    with open(full_path, "wb") as f: f.write(base["image"])
+                    
+                    if pg_num not in self.pdf_images: self.pdf_images[pg_num] = []
+                    self.pdf_images[pg_num].append(fname)
+                except: pass
+
+        return f"✅ Visual Agent Indexed {len(self.chunks)} chunks."
+
+rag = RAGEngine()
 
 # ==========================================
-# ENDPOINTS
+# 4. API & AGENT WORKFLOWS
 # ==========================================
+
+class QuizRequest(BaseModel):
+    topic: str = "General"
+    target_language: str = "English"
+
+class EvaluateRequest(BaseModel):
+    question: str
+    selected_option: str
+    context: str
+    target_language: str = "English"
 
 @app.post("/upload")
-async def upload_manual(file: UploadFile = File(...)):
-    temp_filename = f"temp_{file.filename}"
+async def upload_file(file: UploadFile = File(...)):
+    temp_path = f"temp_{file.filename}"
+    try:
+        with open(temp_path, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+        return {"status": "success", "info": rag.ingest_pdf(temp_path)}
+    finally:
+        if os.path.exists(temp_path): os.remove(temp_path)
 
-    with open(temp_filename, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+@app.post("/generate_quiz")
+async def generate_quiz(req: QuizRequest):
+    global LAST_USED_LANGUAGE
+    if req.target_language != LAST_USED_LANGUAGE:
+        logger.info(f"🌐 Switching Lang: {LAST_USED_LANGUAGE} -> {req.target_language}")
+        LAST_USED_LANGUAGE = req.target_language
 
-    extracted_text = extract_text_from_file(temp_filename, file.filename)
+    # Context Selection
+    if not rag.chunks:
+        context_text = "Standard safety protocols for industrial machinery."
+        page_num = 0
+    else:
+        ctx = random.choice(rag.chunks)
+        context_text = ctx['text']
+        page_num = ctx['page']
 
-    if os.path.exists(temp_filename):
-        os.remove(temp_filename)
-
-    if len(extracted_text) < 20:
-        extracted_text = "WARNING: The uploaded document was empty or unreadable."
-
-    global_context["manual_text"] = extracted_text
-    global_context["history"] = []
-    global_context["topic"] = (
-        file.filename.replace(".pdf", "").replace("_", " ")
+    # ==========================================
+    # AGENT 2: INSTRUCTIONAL ARCHITECT AGENT
+    # ==========================================
+    # Role: "The Teacher". Creates scenarios and quizzes.
+    # Logic: Uses CAMEL to prompt Ernie for JSON quiz data.
+    # ---------------------------------------------------------
+    logger.info("🧠 [AGENT 2: INSTRUCTOR] Designing Scenario...")
+    
+    instructor_agent, backend = create_camel_agent(
+        "You are an Expert Technical Instructor. You output strictly valid JSON."
     )
+    
+    prompt_content = f"""
+    TASK: Create a technical scenario based on source material.
+    TARGET LANGUAGE: {req.target_language}
+    
+    OUTPUT JSON FORMAT:
+    {{
+        "scenario": "Scenario description in {req.target_language}...",
+        "question": "Question in {req.target_language}...",
+        "options": ["Option A", "Option B", "Option C", "Option D"],
+        "visual_query": "3 keywords in ENGLISH for a diagram"
+    }}
 
-    print(f"[UPLOAD] ✅ Success. Topic set to: {global_context['topic']}")
+    SOURCE MATERIAL:
+    {context_text[:2000]}
+    """
+    
+    # CAMEL Message Construction
+    messages = [
+        instructor_agent.system_message,
+        BaseMessage.make_user_message(role_name="User", content=prompt_content)
+    ]
+    
+    # Execute Agent Thinking
+    raw_response = backend.run(messages)
+    quiz_data = extract_json_from_ai_response(raw_response)
+
+    # Fallback if Agent fails
+    if not quiz_data:
+        quiz_data = {
+            "scenario": "Error generating scenario.",
+            "question": "Please retry.",
+            "options": ["Retry"],
+            "visual_query": "error"
+        }
+
+    # ==========================================
+    # AGENT 4: GENERATIVE ARTIST AGENT (SDXL)
+    # ==========================================
+    # Role: "The Artist". Creates visuals if no real evidence exists.
+    # Logic: Uses HuggingFace Inference Client.
+    # ---------------------------------------------------------
+    image_url = ""
+    image_source = ""
+    
+    # Check Visual Agent's cache first (Real Evidence)
+    real_images = rag.pdf_images.get(page_num, [])
+    
+    if real_images:
+        logger.info("👁️ [AGENT 1] Retrieving specific evidence from PDF.")
+        selected_img = random.choice(real_images)
+        image_url = f"http://localhost:8000/static/{selected_img}"
+        image_source = f"MANUAL EVIDENCE (PG {page_num + 1})"
+    else:
+        logger.info("🎨 [AGENT 4: ARTIST] Generating synthetic diagram...")
+        visual_query = quiz_data.get("visual_query", "schematic diagram")
+        try:
+            hf_prompt = f"technical schematic of {visual_query}, blueprint style, white on blue, high detail"
+            image = hf_client.text_to_image(prompt=hf_prompt, model="stabilityai/stable-diffusion-xl-base-1.0")
+            
+            buf = io.BytesIO()
+            image.save(buf, format="PNG")
+            b64_img = base64.b64encode(buf.getvalue()).decode("utf-8")
+            image_url = f"data:image/png;base64,{b64_img}"
+            image_source = "AI RECONSTRUCTION (SDXL)"
+        except Exception as e:
+            image_url = "https://placehold.co/600x400?text=No+Image"
+            image_source = "IMAGE UNAVAILABLE"
 
     return {
-        "status": "success",
-        "char_count": len(extracted_text),
+        "data": quiz_data,
+        "context": context_text,
+        "image_url": image_url,
+        "image_source": image_source
     }
 
-
-@app.post("/simulate")
-async def run_simulation(request: SimRequest):
-    manual = global_context.get("manual_text", "")
-
-    if not manual or len(manual) < 50:
-        return {"response": "SYSTEM ERROR: No manual loaded."}
-
-    global_context["history"].append(f"User: {request.action}")
-    conversation_log = "\n".join(global_context["history"][-4:])
-
-    prompt = f"""
-ROLE: Expert Simulator.
-
-MANUAL:
-{manual[:4000]}
-
-INSTRUCTIONS:
-- Language: {request.language}
-- Create scenario + 3 options (A, B, C)
-- MUST include image tag if physical concept exists
-
-[Image of Object Name]
-
-CHAT HISTORY:
-{conversation_log}
-"""
-
-    try:
-        response = erniebot.ChatCompletion.create(
-            model="ernie-3.5",
-            messages=[{"role": "user", "content": prompt}],
-        )
-
-        ai_reply = response.get_result()
-
-        if (
-            "[Image of" not in ai_reply
-            and "START SIMULATION" not in request.action
-        ):
-            visual = extract_visual_concept(ai_reply)
-            if visual:
-                ai_reply += f"\n\n[Image of {visual}]\n"
-
-        global_context["history"].append(f"AI: {ai_reply}")
-        return {"response": ai_reply}
-
-    except Exception as e:
-        return {"response": f"System Error: {str(e)}"}
-
-
-@app.post("/generate_image")
-async def generate_image_endpoint(req: ImageGenRequest):
-    prompt_content = req.prompt
-    context_topic = global_context.get("topic", "")
-
-    full_prompt = (
-        "Technical schematic drawing of "
-        f"{prompt_content} in context of {context_topic}, "
-        "white lines on blue background, blueprint style, high definition"
+@app.post("/evaluate_answer")
+async def evaluate_answer(req: EvaluateRequest):
+    # ==========================================
+    # AGENT 3: COMPLIANCE AUDITOR AGENT
+    # ==========================================
+    # Role: "The Judge". Verifies answers against the text.
+    # Logic: Strict evaluation using CAMEL + Ernie.
+    # ---------------------------------------------------------
+    logger.info("⚖️ [AGENT 3: AUDITOR] Verifying compliance...")
+    
+    auditor_agent, backend = create_camel_agent(
+        "You are a Strict Compliance Auditor. Verify actions against text."
     )
+    
+    prompt_content = f"""
+    CONTEXT: {req.context}
+    QUESTION: {req.question}
+    USER ANSWER: {req.selected_option}
+    
+    TASK:
+    1. Evaluate correctness based strictly on context.
+    2. Provide feedback in {req.target_language}.
+    
+    OUTPUT JSON:
+    {{
+        "is_correct": true/false,
+        "feedback": "Explanation in {req.target_language}...",
+        "citation": "Quote from text..."
+    }}
+    """
+    
+    messages = [
+        auditor_agent.system_message,
+        BaseMessage.make_user_message(role_name="User", content=prompt_content)
+    ]
+    
+    raw_response = backend.run(messages)
+    result = extract_json_from_ai_response(raw_response)
+    
+    if not result:
+        return {"is_correct": False, "feedback": "Auditor Error", "citation": "N/A"}
+        
+    return result
 
-    print(f"\n🎨 [IMAGE REQUEST] Prompt: '{full_prompt}'")
-
-    try:
-        print("   👉 Attempting Hugging Face (SDXL)...")
-
-        image = hf_client.text_to_image(
-            model="stabilityai/stable-diffusion-xl-base-1.0",
-            prompt=full_prompt,
-        )
-
-        buffered = io.BytesIO()
-        image.save(buffered, format="PNG")
-
-        img_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
-        img_url = f"data:image/png;base64,{img_base64}"
-
-        print("   ✅ [IMAGE GEN] VIA HUGGING FACE (Success)")
-        return {"image": img_url}
-
-    except Exception as e:
-        print(f"   ⚠️ Hugging Face Failed: {e}")
-        print("   👉 Switching to Pollinations.ai...")
-
-        safe_prompt = full_prompt.replace(" ", "%20")
-        fallback_url = (
-            "https://image.pollinations.ai/prompt/"
-            f"{safe_prompt}?width=512&height=512&model=flux&nologo=true"
-        )
-
-        print("   ✅ [IMAGE GEN] VIA FALLBACK (Pollinations)")
-        return {"image": fallback_url}
+if __name__ == "__main__":
+    import uvicorn
+    logger.info("🚀 SkillSync CAMEL-Powered Core Starting...")
+    uvicorn.run(app, host="0.0.0.0", port=8000)
