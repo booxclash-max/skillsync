@@ -1,5 +1,6 @@
-# 🧠 SkillSync  
-### Autonomous Multi-Agent Training Platform  
+# 🧠 SkillSync
+
+### Autonomous Multi-Agent Training Platform
 
 **Transforming static technical manuals into interactive, multimodal, and audit-ready simulations.**
 
@@ -7,70 +8,75 @@ SkillSync is an intelligent orchestration engine that uses a swarm of specialize
 
 ---
 
-## 🚀 Live Demo  
+## 🚀 Live Demo
 
-👉 **Try the Lite Version Here**  
+👉 **Try the Lite Version Here**
 *(Live deployment running in **Lite Mode** for high availability during judging)*
 
 > ⚠️ Note: The live demo focuses on **Agentic Logic (CAMEL + ERNIE)** rather than deep OCR, to remain stable on free-tier infrastructure.
 
 ---
 
-## ✨ Key Features  
+## ✨ Key Features
 
-### 🤖 1. Autonomous Agent Swarm (CAMEL-AI)  
+### 🤖 1. Autonomous Agent Swarm (CAMEL-AI)
+
 Unlike standard chatbots, SkillSync orchestrates **multiple specialized agents** that collaborate to build and validate training content:
 
-- **Visual Perception Agent**  
+* **Visual Perception Agent**
   Scans documents for text, diagrams, charts, and blueprints using **PaddleOCR**.
 
-- **Instructional Architect Agent**  
+* **Instructional Architect Agent**
   Designs the training scenario, learning flow, and role-play logic using **ERNIE 4.0**.
 
-- **Compliance Auditor Agent**  
+* **Compliance Auditor Agent**
   A strict, adversarial agent that validates every user answer **directly against the source document**, preventing hallucinations and ensuring regulatory accuracy.
 
 ---
 
-### 👁️ 2. Multimodal Document Intelligence  
+### 👁️ 2. Multimodal Document Intelligence
+
 SkillSync doesn’t just read text.
 
 Powered by **PaddleOCR** and **ERNIE Vision**, it:
-- Extracts spatial and visual information from diagrams
-- Identifies components (e.g., valves in schematics, organelles in biology diagrams)
-- Generates **visual-centric, context-aware questions**
+
+* Extracts spatial and visual information from diagrams
+* Identifies components (e.g., valves in schematics, organelles in biology diagrams)
+* Generates **visual-centric, context-aware questions**
 
 This enables training grounded in *what learners actually see in the real world*.
 
 ---
 
-### 🌍 3. The “Babel Fish” Engine  
+### 🌍 3. The “Babel Fish” Engine
+
 Instantly retrain global teams.
 
 Upload a manual in English and generate **technically accurate simulations** in:
-- Spanish
-- Mandarin
-- Bemba (and more)
+
+* Spanish
+* Mandarin
+* Bemba (and more)
 
 Powered by **ERNIE’s cross-lingual reasoning**, not simple translation.
 
 ---
 
-## 🏗️ Architecture  
+## 🏗️ Architecture
 
 SkillSync follows a **cloud-native, agentic architecture**:
 
-| Component        | Technology        | Role |
-|------------------|------------------|------|
-| Orchestration    | CAMEL-AI         | Manages agent collaboration and debate |
-| Cognitive Core   | ERNIE-4.0        | Multimodal reasoning and pedagogy |
-| Vision Driver    | PaddleOCR        | OCR + layout & diagram extraction |
-| Backend API      | FastAPI          | High-performance Python gateway |
-| Frontend         | React + Vite     | Immersive cyberpunk-style UI |
+| Component      | Technology   | Role                                   |
+| -------------- | ------------ | -------------------------------------- |
+| Orchestration  | CAMEL-AI     | Manages agent collaboration and debate |
+| Cognitive Core | ERNIE-4.0    | Multimodal reasoning and pedagogy      |
+| Vision Driver  | PaddleOCR    | OCR + layout & diagram extraction      |
+| Backend API    | FastAPI      | High-performance Python gateway        |
+| Frontend       | React + Vite | Immersive cyberpunk-style UI           |
 
 ---
 
-## 🧠 Agent Workflow  
+## 🧠 Agent Workflow
 
 ```mermaid
 graph TD
@@ -83,44 +89,46 @@ graph TD
     UserUI -->|Submits Answer| Auditor[Compliance Auditor Agent]
     Auditor -->|Verifies Against PDF| Feedback[Strict Feedback]
     Feedback --> UserUI
-⚠️ Deployment Note: Enterprise vs Lite Mode
-To balance capability and stability during judging, SkillSync supports two modes:
+```
 
-🟢 Production Mode (Full Capability – Seen in Video Demo)
-Driver: PaddleOCR (Deep Learning) + PaddlePaddle-GPU
+---
 
-Features:
+## ⚠️ Deployment Note: Enterprise vs Lite Mode
 
-Full layout analysis
+To balance **capability** and **stability** during judging, SkillSync supports two modes:
 
-Diagram understanding
+### 🟢 Production Mode (Full Capability – Seen in Video Demo)
 
-OCR for scanned documents
+* **Driver:** PaddleOCR (Deep Learning) + PaddlePaddle-GPU
+* **Features:**
 
-Requirements:
+  * Full layout analysis
+  * Diagram understanding
+  * OCR for scanned documents
+* **Requirements:**
 
-4GB+ RAM
+  * 4GB+ RAM
+  * CUDA-capable GPU
 
-CUDA-capable GPU
+### 🟡 Live Demo Mode (Render Deployment)
 
-🟡 Live Demo Mode (Render Deployment)
-Driver: PyMuPDF (Lightweight)
+* **Driver:** PyMuPDF (Lightweight)
+* **Features:**
 
-Features:
+  * Standard text extraction
+  * Image ripping
+* **Why:**
+  Ensures stability on **512MB RAM containers** during live judging
 
-Standard text extraction
+> ℹ️ The live demo highlights **agent orchestration and reasoning**, not deep OCR.
 
-Image ripping
+---
 
-Why:
-Ensures stability on 512MB RAM containers during live judging
+## 🛠️ Local Installation (Full Production Mode)
 
-ℹ️ The live demo highlights agent orchestration and reasoning, not deep OCR.
+### 1️⃣ Clone & Setup Backend
 
-🛠️ Local Installation (Full Production Mode)
-1️⃣ Clone & Setup Backend
-bash
-Copy code
+```bash
 git clone https://github.com/happi-web/SkillSync.git
 cd SkillSync/backend
 
@@ -129,49 +137,55 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # Install FULL requirements
 pip install -r requirements-full.txt
-Includes: paddlepaddle, paddleocr, camel-ai, fastapi
+```
 
-2️⃣ Configure Tokens
-Create a .env file in /backend:
-
-env
-Copy code
-AI_STUDIO_TOKEN="your_baidu_ernie_token"
-HF_TOKEN="your_huggingface_token"
-3️⃣ Run the Agent Swarm
-bash
-Copy code
-python main.py
-Server will start at:
-👉 http://localhost:8000
-
-🏆 Hackathon Tracks
-SkillSync is submitted for:
-
-🏅 Best Agent System (CAMEL-AI)
-Multi-agent Architect vs Auditor debate architecture
-
-🏅 Best ERNIE Multimodal Application
-Deep integration of Text (ERNIE) + Vision (PaddleOCR) for real-world training
-
-👤 Author
-Chilongo Kondwani
-Founder & Engineer
-
-Developed for the Baidu ERNIE AI Developer Challenge
-
-📜 License
-MIT License
-
-yaml
-Copy code
+> Includes: `paddlepaddle`, `paddleocr`, `camel-ai`, `fastapi`
 
 ---
 
-If you want next:
-- 🔥 **Shortened judge-friendly README (1-page)**
-- 🎥 **README aligned to a demo video**
-- 🧪 **API section + example requests**
-- 🏆 **“Why we should win” section for judges**
+### 2️⃣ Configure Tokens
 
-Just say the word.
+Create a `.env` file in `/backend`:
+
+```env
+AI_STUDIO_TOKEN="your_baidu_ernie_token"
+HF_TOKEN="your_huggingface_token"
+```
+
+---
+
+### 3️⃣ Run the Agent Swarm
+
+```bash
+python main.py
+```
+
+Server will start at:
+👉 `http://localhost:8000`
+
+---
+
+## 🏆 Hackathon Tracks
+
+SkillSync is submitted for:
+
+* **🏅 Best Agent System (CAMEL-AI)**
+  Multi-agent *Architect vs Auditor* debate architecture
+
+* **🏅 Best ERNIE Multimodal Application**
+  Deep integration of **Text (ERNIE)** + **Vision (PaddleOCR)** for real-world training
+
+---
+
+## 👤 Author
+
+**Chilongo Kondwani**
+Founder & Engineer
+
+Developed for the **Baidu ERNIE AI Developer Challenge**
+
+---
+
+## 📜 License
+
+MIT License
