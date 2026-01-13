@@ -3,7 +3,7 @@ import SimulationInterface from './components/SimulationInterface';
 import { UploadCloud, XCircle, Cpu, ShieldCheck } from 'lucide-react';
 
 const BACKEND_URL = import.meta.env.MODE === 'production' 
-  ? 'https://skillsync-backend-5es5.onrender.com' 
+  ? 'https://skillsync-drab.vercel.app' 
   : 'http://localhost:8000';
 
 type Phase = 'upload' | 'training' | 'ready' | 'simulation';
