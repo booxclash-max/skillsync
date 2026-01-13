@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import SimulationInterface from './components/SimulationInterface';
-import { UploadCloud, Database, XCircle, Cpu, ShieldCheck } from 'lucide-react';
+import { UploadCloud, XCircle, Cpu, ShieldCheck } from 'lucide-react';
 
 const BACKEND_URL = import.meta.env.MODE === 'production' 
   ? 'https://skillsync-kdzy.onrender.com' 
@@ -115,22 +115,36 @@ function App() {
 
       {/* Header HUD */}
       {phase !== 'simulation' && (
-        <header className="pt-12 flex flex-col items-center z-20 relative animate-in fade-in slide-in-from-top duration-700">
-          <div className="group relative">
-            <div className="absolute -inset-1 bg-cyan-500 rounded blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
-            <div className="relative px-8 py-4 bg-slate-950 border border-cyan-500/50 rounded-lg flex items-center space-x-4">
-              <Database className="text-cyan-400 animate-pulse" size={32} />
-              <div>
-                <h1 className="text-4xl font-black tracking-[0.3em] text-white">SKILLSYNC</h1>
-                <div className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-ping" />
-                  <p className="text-[10px] text-cyan-500/70 font-bold tracking-widest uppercase">Kernel v4.0.2 // Neural Interface</p>
-                </div>
-              </div>
-            </div>
+  <header className="pt-12 flex flex-col items-center z-20 relative animate-in fade-in slide-in-from-top duration-700">
+    <div className="group relative">
+      <div className="absolute -inset-1 bg-cyan-500 rounded blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+
+      <div className="relative px-8 py-4 bg-slate-950 border border-cyan-500/50 rounded-lg flex items-center space-x-4">
+        
+        {/* IMAGE ICON (32px like Database) */}
+        <img
+          src="/icons/skillsync-core.png"  // change to your image path
+          alt="SkillSync Core"
+          className="w-8 h-8 animate-pulse"
+        />
+
+        <div>
+          <h1 className="text-4xl font-black tracking-[0.3em] text-white">
+            SKILLSYNC
+          </h1>
+
+          <div className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-ping" />
+            <p className="text-[10px] text-cyan-500/70 font-bold tracking-widest uppercase">
+              Kernel v4.0.2 // Neural Interface
+            </p>
           </div>
-        </header>
-      )}
+        </div>
+
+      </div>
+    </div>
+  </header>
+)}
 
       <main className="container mx-auto px-4 pt-20 pb-12 flex flex-col items-center justify-center min-h-[70vh] z-10 relative">
         
